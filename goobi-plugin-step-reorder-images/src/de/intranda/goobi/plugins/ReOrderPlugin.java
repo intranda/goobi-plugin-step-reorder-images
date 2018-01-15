@@ -83,7 +83,11 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
             // 4. rename first half to 1,3,5, ...
             int imageNumber = 1;
             for (Path image : leftSideImages) {
-                String newImageFileName = String.format("%08d", imageNumber) + getFileExtension(image.getFileName().toString());
+                String prefix = image.getFileName().toString();
+                if (prefix.contains("_")) {
+                    prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
+                }
+                String newImageFileName = prefix+String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(masterFolderName, newImageFileName);
                 Files.move(image, destination);
 //                NIOFileUtils.copyFile(image, destination);
@@ -94,7 +98,11 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
 
             imageNumber = 2;
             for (Path image : rightSideImages) {
-                String newImageFileName = String.format("%08d", imageNumber) + getFileExtension(image.getFileName().toString());
+                String prefix = image.getFileName().toString();
+                if (prefix.contains("_")) {
+                    prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
+                }
+                String newImageFileName = prefix+ String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(masterFolderName, newImageFileName);
                 Files.move(image, destination);
 //                NIOFileUtils.copyFile(image, destination);
@@ -108,6 +116,8 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
 
         return PluginReturnValue.FINISH;
     }
+    
+
 
     private String getFileExtension(String fileName) {
         if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
