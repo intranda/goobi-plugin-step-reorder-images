@@ -13,14 +13,12 @@ import lombok.extern.log4j.Log4j;
 
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
-import org.goobi.production.enums.LogType;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
-import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.NIOFileUtils;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
@@ -46,7 +44,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
         // 1. load images from master folder
         try {
             String masterFolderName = process.getImagesOrigDirectory(false);
-            String mediaFolderName = process.getImagesTifDirectory(false);
+//            String mediaFolderName = process.getImagesTifDirectory(false);
 
             List<Path> imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName);
 
@@ -55,20 +53,20 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 return PluginReturnValue.FINISH;
             }
 
-            // 2. check if media folder is empty
-            if (!NIOFileUtils.list(mediaFolderName).isEmpty()) {
-                // found images in media folder, cancel
-                // TODO get error text from messages
-                String message = "destination folder is not empty.";
-                Helper.setFehlerMeldung(message);
-                Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, message);
-                return PluginReturnValue.ERROR;
-            }
-            
-            Path mediaFolder = Paths.get(mediaFolderName);
-            if (!Files.exists(mediaFolder)) {
-                Files.createDirectories(mediaFolder);
-            }
+//            // 2. check if media folder is empty
+//            if (!NIOFileUtils.list(mediaFolderName).isEmpty()) {
+//                // found images in media folder, cancel
+//                // TODO get error text from messages
+//                String message = "destination folder is not empty.";
+//                Helper.setFehlerMeldung(message);
+//                Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, message);
+//                return PluginReturnValue.ERROR;
+//            }
+//            
+//            Path mediaFolder = Paths.get(mediaFolderName);
+//            if (!Files.exists(mediaFolder)) {
+//                Files.createDirectories(mediaFolder);
+//            }
 
             // 3. find first and second half of images (even: images/2, odd images/2 + 1)
             List<Path> leftSideImages;
@@ -82,22 +80,24 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 leftSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2 + 1);
                 rightSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 + 1, imagesInMasterFolder.size());
             }
-            // 4. copy first half to media/ and rename it to 1,3,5, ...
+            // 4. rename first half to 1,3,5, ...
             int imageNumber = 1;
             for (Path image : leftSideImages) {
                 String newImageFileName = String.format("%08d", imageNumber) + getFileExtension(image.getFileName().toString());
-                Path destination = Paths.get(mediaFolderName, newImageFileName);
-                NIOFileUtils.copyFile(image, destination);
+                Path destination = Paths.get(masterFolderName, newImageFileName);
+                Files.move(image, destination);
+//                NIOFileUtils.copyFile(image, destination);
                 imageNumber = imageNumber + 2;
             }
 
-            // 5. copy second half to media/ and rename it to 2,4,6, ...
+            // 5. rename second half to 2,4,6, ...
 
             imageNumber = 2;
             for (Path image : rightSideImages) {
                 String newImageFileName = String.format("%08d", imageNumber) + getFileExtension(image.getFileName().toString());
-                Path destination = Paths.get(mediaFolderName, newImageFileName);
-                NIOFileUtils.copyFile(image, destination);
+                Path destination = Paths.get(masterFolderName, newImageFileName);
+                Files.move(image, destination);
+//                NIOFileUtils.copyFile(image, destination);
                 imageNumber = imageNumber + 2;
             }
 
