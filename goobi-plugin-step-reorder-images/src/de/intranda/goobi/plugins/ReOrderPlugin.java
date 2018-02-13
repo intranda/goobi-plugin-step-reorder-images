@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
+import javax.swing.event.ListSelectionEvent;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,14 +46,22 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
     public PluginReturnValue run() {
         // 1. load images from master folder
         try {
+        		boolean firstFileIsRight = false;
+        		
             String masterFolderName = process.getImagesOrigDirectory(false);
-//            String mediaFolderName = process.getImagesTifDirectory(false);
-
+            String mediaFolderName = process.getImagesTifDirectory(false);
+            String targetFolderName = mediaFolderName;
+            
             List<Path> imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName, NIOFileUtils.imageNameFilter);
-
+            // no master images found, finish
             if (imagesInMasterFolder.isEmpty()) {
-                // no master images found, finish
                 return PluginReturnValue.FINISH;
+            }
+
+            // create target folder it not exists
+            Path targetFolder = Paths.get(targetFolderName);
+            if (!Files.exists(targetFolder)) {
+            		Files.createDirectories(targetFolder);
             }
 
 //            // 2. check if media folder is empty
@@ -62,24 +73,30 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
 //                Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, message);
 //                return PluginReturnValue.ERROR;
 //            }
-//            
-//            Path mediaFolder = Paths.get(mediaFolderName);
-//            if (!Files.exists(mediaFolder)) {
-//                Files.createDirectories(mediaFolder);
-//            }
 
             // 3. find first and second half of images (even: images/2, odd images/2 + 1)
             List<Path> leftSideImages;
             List<Path> rightSideImages;
             if (imagesInMasterFolder.size() % 2 == 0) {
                 // even
-                leftSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2);
-                rightSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 , imagesInMasterFolder.size());
+            		if (firstFileIsRight) {
+            			leftSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2);
+            			rightSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 , imagesInMasterFolder.size());
+            			// reverse all right images to bring these to correct order
+            			Collections.reverse(rightSideImages);
+            		} else {
+                		rightSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2);
+                    leftSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 , imagesInMasterFolder.size());
+                    // reverse all left images to bring these to correct order
+                    Collections.reverse(leftSideImages);
+            		}
             } else {
                 // odd
-                leftSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2 + 1);
-                rightSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 + 1, imagesInMasterFolder.size());
+            		rightSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2 + 1);
+            		leftSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 + 1, imagesInMasterFolder.size());
             }
+          
+            
             // 4. rename first half to 1,3,5, ...
             int imageNumber = 1;
             for (Path image : leftSideImages) {
@@ -88,10 +105,13 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                     prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
                 }
                 String newImageFileName = "goobi_" + prefix+String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
-                Path destination = Paths.get(masterFolderName, newImageFileName);
-                Files.move(image, destination);
-//                NIOFileUtils.copyFile(image, destination);
-                imageNumber = imageNumber + 2;
+                Path destination = Paths.get(targetFolderName, newImageFileName);
+                if (targetFolderName.equals(masterFolderName)) {
+                		Files.move(image, destination);
+                	}else {
+                		NIOFileUtils.copyFile(image, destination);
+                	}
+                	imageNumber = imageNumber + 2;
             }
 
             // 5. rename second half to 2,4,6, ...
@@ -103,16 +123,19 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                     prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
                 }
                 String newImageFileName = "goobi_" + prefix+ String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
-                Path destination = Paths.get(masterFolderName, newImageFileName);
-                Files.move(image, destination);
-//                NIOFileUtils.copyFile(image, destination);
+                Path destination = Paths.get(targetFolderName, newImageFileName);
+                if (targetFolderName.equals(masterFolderName)) {
+            			Files.move(image, destination);
+	            	}else {
+	            		NIOFileUtils.copyFile(image, destination);
+	            	}
                 imageNumber = imageNumber + 2;
             }
 
-            imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName, NIOFileUtils.imageNameFilter);
+            imagesInMasterFolder = NIOFileUtils.listFiles(targetFolderName, NIOFileUtils.imageNameFilter);
             for (Path image : imagesInMasterFolder) {
             		String newImageFileName = image.getFileName().toString().substring(6, image.getFileName().toString().length());
-                Path destination = Paths.get(masterFolderName, newImageFileName);
+                Path destination = Paths.get(targetFolderName, newImageFileName);
                 Files.move(image, destination);
             }
             
