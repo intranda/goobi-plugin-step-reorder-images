@@ -16,12 +16,14 @@ import lombok.extern.log4j.Log4j;
 
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
+import org.goobi.production.enums.LogType;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
+import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.NIOFileUtils;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
@@ -41,21 +43,21 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
     private Step step;
     private String returnPath;
     private Process process;
+    boolean firstFileIsRight = false;
 
     @Override
     public PluginReturnValue run() {
-        // 1. load images from master folder
         try {
-        		boolean firstFileIsRight = false;
-        		
             String masterFolderName = process.getImagesOrigDirectory(false);
             String mediaFolderName = process.getImagesTifDirectory(false);
             String targetFolderName = mediaFolderName;
             
+            // 1. load images from master folder
             List<Path> imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName, NIOFileUtils.imageNameFilter);
-            // no master images found, finish
+            // if no master images found, finish
             if (imagesInMasterFolder.isEmpty()) {
-                return PluginReturnValue.FINISH;
+            		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed as the master folder is empty.");
+                return PluginReturnValue.ERROR;
             }
 
             // create target folder it not exists
@@ -92,12 +94,13 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
             		}
             } else {
                 // odd
-            		rightSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2 + 1);
-            		leftSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 + 1, imagesInMasterFolder.size());
+            		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of files stopped as there is an odd number of files.");
+                return PluginReturnValue.ERROR;
+//            		rightSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2 + 1);
+//            		leftSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 + 1, imagesInMasterFolder.size());
             }
-          
             
-            // 4. rename first half to 1,3,5, ...
+            // 4. rename left images to 1,3,5, ...
             int imageNumber = 1;
             for (Path image : leftSideImages) {
                 String prefix = image.getFileName().toString();
@@ -114,8 +117,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 	imageNumber = imageNumber + 2;
             }
 
-            // 5. rename second half to 2,4,6, ...
-
+            // 5. rename right images to 2,4,6, ...
             imageNumber = 2;
             for (Path image : rightSideImages) {
                 String prefix = image.getFileName().toString();
@@ -132,6 +134,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 imageNumber = imageNumber + 2;
             }
 
+            // 6. remove temporary prefix 'goobi_' from all files
             imagesInMasterFolder = NIOFileUtils.listFiles(targetFolderName, NIOFileUtils.imageNameFilter);
             for (Path image : imagesInMasterFolder) {
             		String newImageFileName = image.getFileName().toString().substring(6, image.getFileName().toString().length());
@@ -140,7 +143,8 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
             }
             
         } catch (IOException | InterruptedException | SwapException | DAOException e) {
-            log.error(e);
+            log.error("Error while reordering master images", e);
+            Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed: " + e.getMessage() );
             return PluginReturnValue.ERROR;
         }
 
