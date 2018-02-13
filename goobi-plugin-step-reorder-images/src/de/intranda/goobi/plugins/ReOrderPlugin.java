@@ -46,7 +46,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
             String masterFolderName = process.getImagesOrigDirectory(false);
 //            String mediaFolderName = process.getImagesTifDirectory(false);
 
-            List<Path> imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName);
+            List<Path> imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName, NIOFileUtils.imageNameFilter);
 
             if (imagesInMasterFolder.isEmpty()) {
                 // no master images found, finish
@@ -87,7 +87,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 if (prefix.contains("_")) {
                     prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
                 }
-                String newImageFileName = prefix+String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
+                String newImageFileName = "goobi_" + prefix+String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(masterFolderName, newImageFileName);
                 Files.move(image, destination);
 //                NIOFileUtils.copyFile(image, destination);
@@ -102,13 +102,20 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 if (prefix.contains("_")) {
                     prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
                 }
-                String newImageFileName = prefix+ String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
+                String newImageFileName = "goobi_" + prefix+ String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(masterFolderName, newImageFileName);
                 Files.move(image, destination);
 //                NIOFileUtils.copyFile(image, destination);
                 imageNumber = imageNumber + 2;
             }
 
+            imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName, NIOFileUtils.imageNameFilter);
+            for (Path image : imagesInMasterFolder) {
+            		String newImageFileName = image.getFileName().toString().substring(6, image.getFileName().toString().length());
+                Path destination = Paths.get(masterFolderName, newImageFileName);
+                Files.move(image, destination);
+            }
+            
         } catch (IOException | InterruptedException | SwapException | DAOException e) {
             log.error(e);
             return PluginReturnValue.ERROR;
