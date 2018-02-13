@@ -1,0 +1,15 @@
+<config_plugin>
+
+	<config>
+		<!-- which projects to use for (can be more then one, otherwise use *) -->
+		<project>*</project>
+		<step>*</step>
+		<!-- which folder to use as source (master or media) -->
+		<sourceFolder>master</sourceFolder>
+		<!-- which folder to use as target (master or media) -->
+		<targetFolder>master</targetFolder>
+		<!-- which sorting algorithm to use (stanford, luebeck ...) -->
+		<algorithm>stanford</algorithm>
+	</config>	
+
+</config_plugin>

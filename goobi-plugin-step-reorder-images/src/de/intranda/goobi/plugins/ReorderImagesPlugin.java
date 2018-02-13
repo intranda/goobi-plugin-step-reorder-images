@@ -14,6 +14,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.log4j.Log4j;
 
+import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
+import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.LogType;
@@ -23,6 +27,7 @@ import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
+import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.NIOFileUtils;
 import de.sub.goobi.helper.exceptions.DAOException;
@@ -32,63 +37,60 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 @PluginImplementation
 @Log4j
 @EqualsAndHashCode(callSuper = false)
-public @Data class ReOrderPlugin implements IStepPluginVersion2 {
+public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 
     private PluginGuiType pluginGuiType = PluginGuiType.NONE;
     private PluginType type = PluginType.Step;
 
-    private String title = "plugin_intranda_step_reorder-images";
+    private String title = "intranda_step_reorder-images";
 
     private String pagePath = "";
     private Step step;
     private String returnPath;
     private Process process;
-    boolean firstFileIsRight = false;
-
+    
+    private String sortingAlgorithm = "stanford";
+    String sourceFolderName;
+    String targetFolderName;
+   
     @Override
     public PluginReturnValue run() {
-        try {
-            String masterFolderName = process.getImagesOrigDirectory(false);
-            String mediaFolderName = process.getImagesTifDirectory(false);
-            String targetFolderName = mediaFolderName;
-            
+    		if (sortingAlgorithm.equals("stanford")) {
+    			return sortingStanford();
+    		} else {
+    			return sortingStanford();
+    		}
+    }
+    
+    	/**
+    	 * Sorting algorithm for Stanfords Regis project
+    	 * @return
+    	 */
+    	public PluginReturnValue sortingStanford() {
+    		boolean firstFileIsRight = false;
+    		try {
+           
             // 1. load images from master folder
-            List<Path> imagesInMasterFolder = NIOFileUtils.listFiles(masterFolderName, NIOFileUtils.imageNameFilter);
+            List<Path> sourceFiles = NIOFileUtils.listFiles(sourceFolderName, NIOFileUtils.imageNameFilter);
             // if no master images found, finish
-            if (imagesInMasterFolder.isEmpty()) {
+            if (sourceFiles.isEmpty()) {
             		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed as the master folder is empty.");
                 return PluginReturnValue.ERROR;
             }
 
-            // create target folder it not exists
-            Path targetFolder = Paths.get(targetFolderName);
-            if (!Files.exists(targetFolder)) {
-            		Files.createDirectories(targetFolder);
-            }
-
-//            // 2. check if media folder is empty
-//            if (!NIOFileUtils.list(mediaFolderName).isEmpty()) {
-//                // found images in media folder, cancel
-//                // TODO get error text from messages
-//                String message = "destination folder is not empty.";
-//                Helper.setFehlerMeldung(message);
-//                Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, message);
-//                return PluginReturnValue.ERROR;
-//            }
-
             // 3. find first and second half of images (even: images/2, odd images/2 + 1)
             List<Path> leftSideImages;
             List<Path> rightSideImages;
-            if (imagesInMasterFolder.size() % 2 == 0) {
+            if (sourceFiles.size() % 2 == 0) {
                 // even
             		if (firstFileIsRight) {
-            			leftSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2);
-            			rightSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 , imagesInMasterFolder.size());
+            			leftSideImages = sourceFiles.subList(0, sourceFiles.size() / 2);
+            			rightSideImages = sourceFiles.subList(sourceFiles.size() / 2 , sourceFiles.size());
             			// reverse all right images to bring these to correct order
             			Collections.reverse(rightSideImages);
             		} else {
-                		rightSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2);
-                    leftSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 , imagesInMasterFolder.size());
+                		rightSideImages = sourceFiles.subList(0, sourceFiles.size() / 2);
+                    leftSideImages = sourceFiles.subList(sourceFiles.size() / 2 , sourceFiles.size());
                     // reverse all left images to bring these to correct order
                     Collections.reverse(leftSideImages);
             		}
@@ -96,8 +98,6 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 // odd
             		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of files stopped as there is an odd number of files.");
                 return PluginReturnValue.ERROR;
-//            		rightSideImages = imagesInMasterFolder.subList(0, imagesInMasterFolder.size() / 2 + 1);
-//            		leftSideImages = imagesInMasterFolder.subList(imagesInMasterFolder.size() / 2 + 1, imagesInMasterFolder.size());
             }
             
             // 4. rename left images to 1,3,5, ...
@@ -109,7 +109,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 }
                 String newImageFileName = "goobi_" + prefix+String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(targetFolderName, newImageFileName);
-                if (targetFolderName.equals(masterFolderName)) {
+                if (targetFolderName.equals(sourceFolderName)) {
                 		Files.move(image, destination);
                 	}else {
                 		NIOFileUtils.copyFile(image, destination);
@@ -126,7 +126,7 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
                 }
                 String newImageFileName = "goobi_" + prefix+ String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(targetFolderName, newImageFileName);
-                if (targetFolderName.equals(masterFolderName)) {
+                if (targetFolderName.equals(sourceFolderName)) {
             			Files.move(image, destination);
 	            	}else {
 	            		NIOFileUtils.copyFile(image, destination);
@@ -135,14 +135,14 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
             }
 
             // 6. remove temporary prefix 'goobi_' from all files
-            imagesInMasterFolder = NIOFileUtils.listFiles(targetFolderName, NIOFileUtils.imageNameFilter);
-            for (Path image : imagesInMasterFolder) {
+            sourceFiles = NIOFileUtils.listFiles(targetFolderName, NIOFileUtils.imageNameFilter);
+            for (Path image : sourceFiles) {
             		String newImageFileName = image.getFileName().toString().substring(6, image.getFileName().toString().length());
                 Path destination = Paths.get(targetFolderName, newImageFileName);
                 Files.move(image, destination);
             }
             
-        } catch (IOException | InterruptedException | SwapException | DAOException e) {
+        } catch (IOException e) {
             log.error("Error while reordering master images", e);
             Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed: " + e.getMessage() );
             return PluginReturnValue.ERROR;
@@ -179,6 +179,58 @@ public @Data class ReOrderPlugin implements IStepPluginVersion2 {
         this.step = step;
         process = step.getProzess();
         this.returnPath = returnPath;
+
+        String projectName = step.getProzess().getProjekt().getTitel();
+		XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig(this);
+		xmlConfig.setExpressionEngine(new XPathExpressionEngine());
+		xmlConfig.setReloadingStrategy(new FileChangedReloadingStrategy());
+
+		SubnodeConfiguration myconfig = null;
+
+		// order of configuration is:
+		// 1.) project name and step name matches
+		// 2.) step name matches and project is *
+		// 3.) project name matches and step name is *
+		// 4.) project name and step name are *
+		try {
+			myconfig = xmlConfig
+					.configurationAt("//config[./project = '" + projectName + "'][./step = '" + step.getTitel() + "']");
+		} catch (IllegalArgumentException e) {
+			try {
+				myconfig = xmlConfig.configurationAt("//config[./project = '*'][./step = '" + step.getTitel() + "']");
+			} catch (IllegalArgumentException e1) {
+				try {
+					myconfig = xmlConfig.configurationAt("//config[./project = '" + projectName + "'][./step = '*']");
+				} catch (IllegalArgumentException e2) {
+					myconfig = xmlConfig.configurationAt("//config[./project = '*'][./step = '*']");
+				}
+			}
+		}
+
+		sortingAlgorithm = myconfig.getString("algorithm", "stanford");
+		try {
+			// get source folder
+			if (myconfig.getString("sourceFolder", "master").equals("master")) {
+				sourceFolderName = step.getProzess().getImagesOrigDirectory(false);
+			} else {
+				sourceFolderName = step.getProzess().getImagesTifDirectory(false);
+			}
+			// get target folder
+			if (myconfig.getString("targetFolder", "master").equals("master")) {
+				targetFolderName = step.getProzess().getImagesOrigDirectory(false);
+			} else {
+				targetFolderName = step.getProzess().getImagesTifDirectory(false);
+			}
+			
+			// create target folder it not exists
+            Path targetFolder = Paths.get(targetFolderName);
+            if (!Files.exists(targetFolder)) {
+            		Files.createDirectories(targetFolder);
+            }
+            
+		} catch (SwapException | DAOException | IOException | InterruptedException e) {
+			log.error(e);
+		}
 
     }
 
