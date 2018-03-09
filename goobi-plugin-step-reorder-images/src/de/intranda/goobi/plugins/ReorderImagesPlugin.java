@@ -42,7 +42,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
     private PluginGuiType pluginGuiType = PluginGuiType.NONE;
     private PluginType type = PluginType.Step;
 
-    private String title = "intranda_step_reorder-images";
+    private String title = "intranda_step_reorder_images";
 
     private String pagePath = "";
     private Step step;
@@ -181,7 +181,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
         this.returnPath = returnPath;
 
         String projectName = step.getProzess().getProjekt().getTitel();
-		XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig(this);
+		XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig(title);
 		xmlConfig.setExpressionEngine(new XPathExpressionEngine());
 		xmlConfig.setReloadingStrategy(new FileChangedReloadingStrategy());
 
