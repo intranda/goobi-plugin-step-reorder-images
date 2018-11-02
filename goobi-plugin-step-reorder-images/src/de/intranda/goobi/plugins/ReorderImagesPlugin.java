@@ -8,12 +8,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.swing.event.ListSelectionEvent;
-
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.extern.log4j.Log4j;
-
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
@@ -30,8 +24,12 @@ import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.NIOFileUtils;
+import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.extern.log4j.Log4j;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 @PluginImplementation
@@ -71,7 +69,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
     		try {
            
             // 1. load images from master folder
-            List<Path> sourceFiles = NIOFileUtils.listFiles(sourceFolderName, NIOFileUtils.imageNameFilter);
+            List<Path> sourceFiles = StorageProvider.getInstance().listFiles(sourceFolderName, NIOFileUtils.imageNameFilter);
             // if no master images found, finish
             if (sourceFiles.isEmpty()) {
             		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed as the master folder is empty.");
@@ -112,7 +110,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
                 if (targetFolderName.equals(sourceFolderName)) {
                 		Files.move(image, destination);
                 	}else {
-                		NIOFileUtils.copyFile(image, destination);
+                		StorageProvider.getInstance().copyFile(image, destination);
                 	}
                 	imageNumber = imageNumber + 2;
             }
@@ -129,13 +127,13 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
                 if (targetFolderName.equals(sourceFolderName)) {
             			Files.move(image, destination);
 	            	}else {
-	            		NIOFileUtils.copyFile(image, destination);
+	            		StorageProvider.getInstance().copyFile(image, destination);
 	            	}
                 imageNumber = imageNumber + 2;
             }
 
             // 6. remove temporary prefix 'goobi_' from all files
-            sourceFiles = NIOFileUtils.listFiles(targetFolderName, NIOFileUtils.imageNameFilter);
+            sourceFiles = StorageProvider.getInstance().listFiles(targetFolderName, NIOFileUtils.imageNameFilter);
             for (Path image : sourceFiles) {
             		String newImageFileName = image.getFileName().toString().substring(6, image.getFileName().toString().length());
                 Path destination = Paths.get(targetFolderName, newImageFileName);
