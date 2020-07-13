@@ -12,6 +12,8 @@
 		<algorithm>stanford</algorithm>
 		<!-- use prefix from previous file name separated by following underscore -->
 		<usePrefix>true</usePrefix>
+		<!-- define if the first page is right or left -->
+		<firstFileIsRight>true</firstFileIsRight>
 		<!-- define which naming format shall be used; default is %04d -->
 		<namingFormat>%04d</namingFormat>
 	</config>	
