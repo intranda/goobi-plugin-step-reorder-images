@@ -50,6 +50,8 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
     private String sortingAlgorithm = "stanford";
     String sourceFolderName;
     String targetFolderName;
+    private boolean usePrefix = true;
+    private String namingFormat = "%04d";
    
     @Override
     public PluginReturnValue run() {
@@ -72,7 +74,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
             List<Path> sourceFiles = StorageProvider.getInstance().listFiles(sourceFolderName, NIOFileUtils.imageNameFilter);
             // if no master images found, finish
             if (sourceFiles.isEmpty()) {
-            		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed as the master folder is empty.");
+            		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of images could not be executed as the source folder is empty.");
                 return PluginReturnValue.ERROR;
             }
 
@@ -81,31 +83,36 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
             List<Path> rightSideImages;
             if (sourceFiles.size() % 2 == 0) {
                 // even
-            		if (firstFileIsRight) {
-            			leftSideImages = sourceFiles.subList(0, sourceFiles.size() / 2);
-            			rightSideImages = sourceFiles.subList(sourceFiles.size() / 2 , sourceFiles.size());
-            			// reverse all right images to bring these to correct order
-            			Collections.reverse(rightSideImages);
-            		} else {
-                		rightSideImages = sourceFiles.subList(0, sourceFiles.size() / 2);
+        		if (firstFileIsRight) {
+        			leftSideImages = sourceFiles.subList(0, sourceFiles.size() / 2);
+        			rightSideImages = sourceFiles.subList(sourceFiles.size() / 2 , sourceFiles.size());
+        			// reverse all right images to bring these to correct order
+        			Collections.reverse(rightSideImages);
+        		} else {
+            		rightSideImages = sourceFiles.subList(0, sourceFiles.size() / 2);
                     leftSideImages = sourceFiles.subList(sourceFiles.size() / 2 , sourceFiles.size());
                     // reverse all left images to bring these to correct order
                     Collections.reverse(leftSideImages);
-            		}
+        		}
             } else {
                 // odd
-            		Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of files stopped as there is an odd number of files.");
+            	Helper.addMessageToProcessLog(process.getId(), LogType.ERROR, "Reordering of files stopped as there is an odd number of files.");
                 return PluginReturnValue.ERROR;
             }
             
             // 4. rename left images to 1,3,5, ...
             int imageNumber = 1;
             for (Path image : leftSideImages) {
-                String prefix = image.getFileName().toString();
-                if (prefix.contains("_")) {
-                    prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
+                
+            	// just use a prefix if wanted (String with underscore followed)
+            	String prefix = "";
+                if (usePrefix) {
+	            	prefix = image.getFileName().toString();
+	                if (prefix.contains("_")) {
+	                    prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
+	                }
                 }
-                String newImageFileName = "goobi_" + prefix+String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
+                String newImageFileName = "goobi_" + prefix + String.format(namingFormat, imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(targetFolderName, newImageFileName);
                 if (targetFolderName.equals(sourceFolderName)) {
                 		Files.move(image, destination);
@@ -118,11 +125,14 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
             // 5. rename right images to 2,4,6, ...
             imageNumber = 2;
             for (Path image : rightSideImages) {
-                String prefix = image.getFileName().toString();
-                if (prefix.contains("_")) {
-                    prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
+            	String prefix = "";
+                if (usePrefix) {
+                	prefix = image.getFileName().toString();
+                	if (prefix.contains("_")) {
+                		prefix = image.getFileName().toString().substring(0,  prefix.lastIndexOf("_") +1);
+                	}
                 }
-                String newImageFileName = "goobi_" + prefix+ String.format("%04d", imageNumber) + getFileExtension(image.getFileName().toString());
+                String newImageFileName = "goobi_" + prefix+ String.format(namingFormat, imageNumber) + getFileExtension(image.getFileName().toString());
                 Path destination = Paths.get(targetFolderName, newImageFileName);
                 if (targetFolderName.equals(sourceFolderName)) {
             			Files.move(image, destination);
@@ -206,6 +216,8 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 		}
 
 		sortingAlgorithm = myconfig.getString("algorithm", "stanford");
+		usePrefix = myconfig.getBoolean("usePrefix", true);
+		namingFormat = myconfig.getString("namingFormat", "%04d");
 		try {
 			// get source folder
 			sourceFolderName = step.getProzess().getConfiguredImageFolder(myconfig.getString("sourceFolder", "master"));
