@@ -4,9 +4,9 @@
 		<!-- which projects to use for (can be more then one, otherwise use *) -->
 		<project>*</project>
 		<step>*</step>
-		<!-- which folder to use as source (master or media) -->
+		<!-- which folder to use as source (master|main|jpeg|source|...) -->
 		<sourceFolder>master</sourceFolder>
-		<!-- which folder to use as target (master or media) -->
+		<!-- which folder to use as target (master|main|jpeg|source|...) -->
 		<targetFolder>master</targetFolder>
 		<!-- which sorting algorithm to use (stanford, luebeck ...) -->
 		<algorithm>stanford</algorithm>

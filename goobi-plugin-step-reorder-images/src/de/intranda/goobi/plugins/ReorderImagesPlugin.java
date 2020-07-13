@@ -208,18 +208,9 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 		sortingAlgorithm = myconfig.getString("algorithm", "stanford");
 		try {
 			// get source folder
-			if (myconfig.getString("sourceFolder", "master").equals("master")) {
-				sourceFolderName = step.getProzess().getImagesOrigDirectory(false);
-			} else {
-				sourceFolderName = step.getProzess().getImagesTifDirectory(false);
-			}
+			sourceFolderName = step.getProzess().getConfiguredImageFolder(myconfig.getString("sourceFolder", "master"));
 			// get target folder
-			if (myconfig.getString("targetFolder", "master").equals("master")) {
-				targetFolderName = step.getProzess().getImagesOrigDirectory(false);
-			} else {
-				targetFolderName = step.getProzess().getImagesTifDirectory(false);
-			}
-			
+			targetFolderName = step.getProzess().getConfiguredImageFolder(myconfig.getString("targetFolder", "master"));
 			// create target folder it not exists
             Path targetFolder = Paths.get(targetFolderName);
             if (!Files.exists(targetFolder)) {
