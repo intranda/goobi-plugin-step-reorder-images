@@ -16,6 +16,12 @@
 		<firstFileIsRight>true</firstFileIsRight>
 		<!-- define which naming format shall be used; default is %04d -->
 		<namingFormat>%04d</namingFormat>
-	</config>	
+		<!-- files to be ignored and moved to the end, can be multiple ones, used 
+			in the order as defined here, the string mentioned here has to be contained 
+			in file name -->
+		<blacklist>_Spine_2</blacklist>
+		<blacklist>_Spine_1</blacklist>
+		<blacklist>_Colourchart</blacklist>
+	</config>
 
 </config_plugin>
