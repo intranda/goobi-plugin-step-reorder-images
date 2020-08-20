@@ -135,7 +135,12 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 	public PluginReturnValue sortingStanford() {
 		
 		try {
-
+		    // 0. if target folder is different from source folder, move everything there first
+		    if (!sourceFolderName.equals(targetFolderName)) {
+		        StorageProvider.getInstance().copyDirectory(Paths.get(sourceFolderName), Paths.get(targetFolderName));
+		        sourceFolderName = targetFolderName;
+		    }
+		    
 			// 1. load images from source folder
 			List<Path> sourceFiles = StorageProvider.getInstance().listFiles(sourceFolderName,
 					NIOFileUtils.imageNameFilter);
