@@ -137,6 +137,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 		try {
 		    // 0. if target folder is different from source folder, move everything there first
 		    if (!sourceFolderName.equals(targetFolderName)) {
+		    	StorageProvider.getInstance().deleteDataInDir(Paths.get(targetFolderName));
 		        StorageProvider.getInstance().copyDirectory(Paths.get(sourceFolderName), Paths.get(targetFolderName));
 		        sourceFolderName = targetFolderName;
 		    }
