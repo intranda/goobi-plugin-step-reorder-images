@@ -1,5 +1,6 @@
 package de.intranda.goobi.plugins;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -8,8 +9,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -68,40 +71,45 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 	}
 
 	public static void main(String[] args) throws IOException {
-	    ReorderImagesPlugin rip = new ReorderImagesPlugin();
-	    String folder = "/Users/steffen/Downloads/edinburgh_reorder_start_small";
-	    rip.blacklist = new ArrayList<String>();
-	    rip.blacklist.add("_Colourchart");
-	    rip.blacklist.add("_Spine_1");
-	    
-	    Path pf = Paths.get(folder);
-	    List<Path> fileNames = new ArrayList<>();
-	    try (DirectoryStream<Path> stream = Files.newDirectoryStream(pf, rip.imageNameFilter)) {
-            for (Path entry : stream) {
-                fileNames.add(entry);
-            }
-        }
-        Collections.sort(fileNames);
-        for (Path path : fileNames) {
-            System.out.println(path.toString());
-        }
-
-        System.out.println("-------------------------");
-        List<Path> fileNamesCopy = new ArrayList<>(fileNames);
-        // sort out the blacklist files
-        for (String black : rip.blacklist) {
-            System.out.println(black);
-            for (Path f : fileNamesCopy) {
-                if (f.getFileName().toString().contains(black)) {
-                    System.out.println(f);
-                    fileNames.remove(f);
-                }
-            }
-        }
-        System.out.println("-------------------------");
-        for (Path path : fileNames) {
-            System.out.println(path.toString());
-        }
+//		NIOFileUtils n = new NIOFileUtils();
+//		n.deleteInDir(Paths.get("/opt/digiverso/goobi/metadata/6/images/schudiss_618299084_master"));
+		
+		
+		
+//		ReorderImagesPlugin rip = new ReorderImagesPlugin();
+//	    String folder = "/Users/steffen/Downloads/edinburgh_reorder_start_small";
+//	    rip.blacklist = new ArrayList<String>();
+//	    rip.blacklist.add("_Colourchart");
+//	    rip.blacklist.add("_Spine_1");
+//	    
+//	    Path pf = Paths.get(folder);
+//	    List<Path> fileNames = new ArrayList<>();
+//	    try (DirectoryStream<Path> stream = Files.newDirectoryStream(pf, rip.imageNameFilter)) {
+//            for (Path entry : stream) {
+//                fileNames.add(entry);
+//            }
+//        }
+//        Collections.sort(fileNames);
+//        for (Path path : fileNames) {
+//            System.out.println(path.toString());
+//        }
+//
+//        System.out.println("-------------------------");
+//        List<Path> fileNamesCopy = new ArrayList<>(fileNames);
+//        // sort out the blacklist files
+//        for (String black : rip.blacklist) {
+//            System.out.println(black);
+//            for (Path f : fileNamesCopy) {
+//                if (f.getFileName().toString().contains(black)) {
+//                    System.out.println(f);
+//                    fileNames.remove(f);
+//                }
+//            }
+//        }
+//        System.out.println("-------------------------");
+//        for (Path path : fileNames) {
+//            System.out.println(path.toString());
+//        }
 	}
 	
 	private DirectoryStream.Filter<Path> imageNameFilter = new DirectoryStream.Filter<Path>() {
@@ -137,8 +145,16 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 		try {
 		    // 0. if target folder is different from source folder, move everything there first
 		    if (!sourceFolderName.equals(targetFolderName)) {
-		    	StorageProvider.getInstance().deleteDataInDir(Paths.get(targetFolderName));
-		        StorageProvider.getInstance().copyDirectory(Paths.get(sourceFolderName), Paths.get(targetFolderName));
+		    	// cleanup target folder first, but this one is not working at all
+		    	//StorageProvider.getInstance().deleteInDir(Paths.get(targetFolderName));
+		    	// use the oldschool way then
+		    	Path rootPath = Paths.get(targetFolderName);
+				Files.walk(rootPath)
+			      .sorted(Comparator.reverseOrder())
+			      .map(Path::toFile)
+			      .forEach(File::delete);
+				StorageProvider.getInstance().createDirectories(rootPath);
+				StorageProvider.getInstance().copyDirectory(Paths.get(sourceFolderName), Paths.get(targetFolderName));
 		        sourceFolderName = targetFolderName;
 		    }
 		    
