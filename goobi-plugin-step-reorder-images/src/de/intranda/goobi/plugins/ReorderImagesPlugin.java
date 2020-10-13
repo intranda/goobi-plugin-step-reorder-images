@@ -72,7 +72,7 @@ public @Data class ReorderImagesPlugin implements IStepPluginVersion2 {
 
 	public static void main(String[] args) throws IOException {
 //		NIOFileUtils n = new NIOFileUtils();
-//		n.deleteInDir(Paths.get("/opt/digiverso/goobi/metadata/6/images/schudiss_618299084_master"));
+//		n.deleteInDir(Paths.get("/opt/digiverso/goobi/metadata/6/"));
 		
 		
 		
