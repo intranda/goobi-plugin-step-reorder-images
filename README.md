@@ -15,8 +15,8 @@ Detail                      | Description
 **Plugin identifier**       | intranda_step_reorder_images
 **Plugin type**             | step
 **Licence**                 | GPL 2.0 or newer
-**Documentation (German)**  | https://docs.goobi.io/workflow-plugins/v/eng/step/goobi-plugin-step-reorder-images
-**Documentation (English)** | https://docs.goobi.io/workflow-plugins/v/ger/step/goobi-plugin-step-reorder-images
+**Documentation (German)**  | https://docs.goobi.io/workflow-plugins/v/ger/step/goobi-plugin-step-reorder-images
+**Documentation (English)** | https://docs.goobi.io/workflow-plugins/v/eng/step/goobi-plugin-step-reorder-images
 
 ## Goobi details
 
