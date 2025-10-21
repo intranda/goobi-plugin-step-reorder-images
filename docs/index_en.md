@@ -3,6 +3,10 @@ title: Reorder Images
 identifier: intranda_step_reorder_images
 published: true
 description: This step plugin enables an automatic correction of the sorting of digitised material that was created separately for right and left book pages.
+keywords:
+    - Goobi workflow
+    - Plugin
+    - Step Plugin
 ---
 ## Introduction
 The plugin allows automatic sorting of image files that were not created continuously during creation and instead were saved separately for left and right pages. This is useful if, for example, an opening angle of a book that is too small prohibits the scanning of left and right pages simultaneously.

@@ -3,6 +3,10 @@ title: Bilder sortieren
 identifier: intranda_step_reorder_images
 published: true
 description: Dieses Step Plugin ermöglicht eine automatische Korrektur der Sortierung von Digitalisaten, die für rechte und linke Buchseiten getrennt voneinander erzeugt wurden.
+keywords:
+    - Goobi workflow
+    - Plugin
+    - Step Plugin
 ---
 ## Einführung
 Das Plugin erlaubt eine automatische Sortierung von Bilddateien, die bei der Erzeugung nicht fortlaufend erzeugt und stattdessen für linke und rechte Seiten getrennt voneinander gespeichert wurden. Dies ist beispielsweise dann sinnvoll, wenn z.B. ein zu geringer Öffnungswinkel eines Buchs das Scannen linker und rechter Seiten gleichzeitig verbietet.
